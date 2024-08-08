@@ -1,27 +1,18 @@
 # KMeans implemented from scratch using CUDA
 
 ### Performance
-
-Tested on a T4 with K=3 and 100 2D datapoints.
-
+Tested on a T4 with K=3 and 100 2D datapoints.  
 ![CUDA KMeans Training Time Analysis](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/36362c92e2a2f4f22d334d02b7655eeda30e886f/CUDA_Training.png)
-![CUDA Total Time Comparison: Constructor vs Training](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/36362c92e2a2f4f22d334d02b7655eeda30e886f/CUDA_Total.png)
-
-
 
 ### Total Runtime Data
-
 | Phase          | Total Time (ms) |
 |----------------|-----------------|
-| Constructor    | 210.398         |
 | Total Classify | 0.472           |
 | Total Update   | 0.390           |
 
 ### Runtime Data by Epoch
-
 | Phase        | Epoch | Time (ms) |
 |--------------|-------|-----------|
-| Constructor  | N/A   | 210.398   |
 | Classify     | 1     | 0.248     |
 | Update       | 1     | 0.050     |
 | Classify     | 2     | 0.026     |
