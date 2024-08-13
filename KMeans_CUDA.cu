@@ -177,7 +177,7 @@ class KMeans_CUDA {
             // GPU setup
             CUDA_CHECK( cudaMemset(d_count, 0, k*sizeof(int)) );
             CUDA_CHECK( cudaMemset(d_sum, 0, k*d*sizeof(int)) );
-            int threads_per_block = 256;
+            int threads_per_block = 32;
             int blocks1 = (n + threads_per_block - 1) / threads_per_block;
             size_t shared_mem_size = (2*k*d*sizeof(float)) + (k*sizeof(int));
 
