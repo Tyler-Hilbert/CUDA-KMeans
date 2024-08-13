@@ -34,7 +34,7 @@ static __global__ void update_centroids(
 
 ## Performance
 Tested with 1,000,000 2d data points with 3 clusters on T4.  
-Reducing threads per block from 256 to 32 and adding a shared memory optimized sum_and_count from 69.5ms to 7.2ms.  
+sum_and_count kernel was optimized from 69.5ms to 7.2ms by reducing threads per block from 256 to 32 and adding a shared memory.  
 
 ### Table 1: 'cuda_api_sum'  
  | Name                   |  Time (%) | Total Time (ns) | Num Calls | Avg (ns) | Med (ns) | Min (ns) | Max (ns) | StdDev (ns) |  
