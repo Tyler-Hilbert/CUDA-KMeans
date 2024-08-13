@@ -22,6 +22,8 @@
 #define K2X 0.5
 #define K2Y 0.8
 
+#define PERF_TEST // Uncomment if conducting performance test (removes prints)
+
 using namespace std;
 
 // Generate random clustered data
@@ -70,6 +72,7 @@ void generateClusteredData(float *data) {
     }
 }
 
+#if !defined(PERF_TEST)
 // Function to write data to a CSV file
 bool writeDataToCSV(const vector<float> &data, const string &filename) {
     ofstream out_file(filename);
@@ -93,22 +96,31 @@ bool writeDataToCSV(const vector<float> &data, const string &filename) {
     printf("Data successfully written to %s\n", filename.c_str());
     return true;
 }
-
+#endif // #if !defined(PERF_TEST)
 
 int main() {
     // Generate random data
     srand(static_cast<unsigned>(time(nullptr)));
     vector<float> data(N * D); // Data is in format { x0, y0, x1, y1, x2, y2... }
     generateClusteredData(data.data());
-    //writeDataToCSV(data, "kmeans_data.csv");
-
+#if !defined(PERF_TEST)
+    writeDataToCSV(data, "kmeans_data.csv");
+#endif // #if !defined(PERF_TEST)
     // Run KMeans
     KMeans_CUDA model(data.data(), N, D, K); // Update here to change model
 
-    //model.printCentroids();
+#if !defined(PERF_TEST)
+    model.printCentroids();
+#endif // #if !defined(PERF_TEST)
     for (int epoch = 0; epoch < EPOCHS; epoch++) {
-        //printf ("Epoch %i\n", epoch);
+#if !defined(PERF_TEST)
+        printf ("Epoch %i\n", epoch);
+#endif // #if !defined(PERF_TEST)
+
         model.one_epoch();
-        //model.printCentroids();
+
+#if !defined(PERF_TEST)
+        model.printCentroids();
+#endif // #if !defined(PERF_TEST)
     }
 }
