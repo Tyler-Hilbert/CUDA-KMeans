@@ -6,6 +6,7 @@
 // n: number of data points
 // d: number of dimensions
 // k: number of clusters
+// Uses shared memory of 3*k*d
 static __global__ void sum_and_count(
     const float *d_data,
     const float *d_centroids,
@@ -14,7 +15,7 @@ static __global__ void sum_and_count(
     int n,
     int d,
     int k
-)
+);
 ```
 
 ```C++
@@ -33,33 +34,34 @@ static __global__ void update_centroids(
 
 ## Performance
 Tested with 1,000,000 2d data points with 3 clusters on T4.  
+sum_and_count kernel was optimized from 69.5ms to 7.2ms by reducing threads per block from 256 to 32 and adding a shared memory.  
 
 ### Table 1: 'cuda_api_sum'  
- |  Time (%) | Total Time (ns) | Num Calls | Avg (ns) | Med (ns) | Min (ns) | Max (ns) | StdDev (ns) | Name |  
- |-----------|-----------------|-----------|----------|----------|----------|----------|-------------|------|
- | 52.2 | 239,244,012 | 4 | 59,811,003.0 | 79,581.0 | 3,439 | 239,081,411 | 119,513,626.2 | cudaMalloc |  
- | 31.8 | 145,860,061 | 20 | 7,293,003.0 | 7,810.5 | 4,625 | 145,661,321 | 32,568,523.9 | cudaLaunchKernel |  
- | 15.2 | 69,665,917 | 20 | 3,483,295.9 | 3,173,981.0 | 5,015 | 7,044,049 | 3,570,872.7 | cudaDeviceSynchronize  |  
- | 0.5 | 2,172,189 | 12 | 181,015.8 | 21,476.5 | 14,635 | 1,899,442 | 541,282.9 | cudaMemcpy |  
- | 0.2 | 1,023,776 | 20 | 51,188.8 | 3,331.0 | 2,131 | 955,446 | 212,845.6 | cudaMemset |  
- | 0.1 | 618,662 | 4 | 154,665.5 | 128,489.5 | 4,173 | 357,510 | 174,656.6 | cudaFree |  
- | 0.0 | 724 | 1 | 724.0 | 724.0 | 724 | 724 | 0.0 | cuModuleGetLoadingMode |  
- 
- ![CUDA KMeans Performance Test Table 1](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Table1.png)  
+ | Name                   |  Time (%) | Total Time (ns) | Num Calls | Avg (ns) | Med (ns) | Min (ns) | Max (ns) | StdDev (ns) |  
+ |------------------------|-----------|-----------------|-----------|----------|----------|----------|----------|-------------|  
+ | cudaMalloc             | 95.2      | 218,170,270     | 4 | 54,542,567.5 | 113,509.5 | 4,744 | 217,938,507 | 108,930,668.2 |  
+ | cudaDeviceSynchronize  | 3.2       | 7,423,066       | 20 | 371,153.3 | 333,606.0 | 5,366 | 749,336 | 372,929.9 |  
+ | cudaMemcpy             | 1.0       | 2,229,311       | 12 | 185,775.9 | 20,722.0 | 14,077 | 1,971,025 | 562,325.6 |  
+ | cudaLaunchKernel       | 0.3       | 700,582         | 20 | 35,029.1 | 8,747.0 | 4,238 | 458,495 | 100,399.2 |  
+ | cudaFree               | 0.2       | 539,348         | 4 | 134,837.0 | 75,913.0 | 3,798 | 383,724 | 178,359.7 |  
+ | cudaMemset             | 0.0       | 86,019          | 20 | 4,300.9 | 3,493.5 | 1,988 | 9,747 | 2,022.5 |  
+ | cuModuleGetLoadingMode | 0.0       | 950             | 1 | 950.0 | 950.0 | 950 | 950 | 0.0 |  
+
+![CUDA KMeans Performance Test Table 1](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Table1.png) 
  
 ### Table 2: 'cuda_gpu_kern_sum'  
- |  Time (%) | Total Time (ns) | Instances | Avg (ns) | Med (ns) | Min (ns) | Max (ns) | StdDev (ns) | Name |  
- |-----------|-----------------|-----------|----------|----------|----------|----------|-------------|------|  
- | 100.0 | 69,530,116 | 10 | 6,953,011.6 | 7,021,011.0 | 6,340,969 | 7,021,123 | 215,049.9 | sum_and_count |  
- | 0.0 | 33,087 | 10 | 3,308.7 | 3,296.0 | 3,264 | 3,392 | 34.4 | update_centroids |  
+ | Kernel           |  Time (%) | Total Time (ns) | Instances | Avg (ns) | Med (ns) | Min (ns) | Max (ns) | StdDev (ns) |  
+ |------------------|-----------|-----------------|-----------|----------|----------|----------|----------|-------------|  
+ | sum_and_count    | 99.5 | 7,276,289 | 10 | 727,628.9 | 738,047.5 | 637,651 | 744,656 | 32,161.5 |  
+ | update_centroids | 0.5 | 35,134 | 10 | 3,513.4 | 3,488.0 | 3,487| 3,615 | 47.0 |  
  
-![CUDA KMeans Performance Test Table 2](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Table2.png)  
+![CUDA KMeans Performance Test Table 2](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Table2.png) 
 
 ### Table 3: 'cuda_gpu_mem_time_sum'  
- |  Time (%) | Total Time (ns) | Count | Avg (ns) | Med (ns) | Min (ns) | Max (ns) | StdDev (ns) | Operation |  
- |-----------|-----------------|-------|----------|----------|----------|----------|-------------|-----------|  
- | 98.0 | 1,655,697 | 2 | 827,848.5 | 827,848.5 | 640 | 1,655,057 | 1,169,849.5 | [CUDA memcpy Host-to-Device] |  
- | 1.0 | 16,993 | 10 | 1,699.3 | 1,632.0 | 1,568 | 2,048 | 188.0 | [CUDA memcpy Device-to-Host] |  
- | 1.0 | 16,321 | 20 | 816.0 | 640.0 | 608 | 1,376 | 302.2 | [CUDA memset] |  
+ | Operation                  |  Time (%) | Total Time (ns) | Count | Avg (ns) | Med (ns) | Min (ns) | Max (ns) | StdDev (ns) |  
+ |----------------------------|-----------|-----------------|-------|----------|----------|----------|----------|-------------|  
+ | CUDA memcpy Host-to-Device | 98.1 | 1,718,202 | 2 | 859,101.0 | 859,101.0 | 704 | 1,717,498 | 1,213,956.7 |  
+ | CUDA memcpy Device-to-Host | 1.0 | 17,503 | 10 | 1,750.3 | 1,664.0 | 1,631 | 2,144 | 199.7 |  
+ | CUDA memset                | 0.9 | 15,585 | 20 | 779.3 | 672.0 | 640 | 1,408 | 262.3 |  
  
-![CUDA KMeans Performance Test Table 3](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Table3.png)  
+![CUDA KMeans Performance Test Table 3](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Table3.png) 

@@ -28,6 +28,7 @@ using namespace std;
 // n: number of data points
 // d: number of dimensions (should be 2)
 // k: number of clusters
+// Uses shared memory of 3*k*d
 static __global__ void sum_and_count(
     const float *d_data,
     const float *d_centroids,
@@ -37,33 +38,62 @@ static __global__ void sum_and_count(
     int d,
     int k
 ) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    // Shared memory: 0 to k*d: centroids, k*d to 2*k*d: sum, 2*k*d to 3*k*d: count
+    extern __shared__ float s_shared[];
+    float *s_centroids = s_shared;      // Shared memory for centroids
+    float *s_sum = &s_shared[k*d];    // Shared memory for sum
+    int *s_count = (int*)&s_sum[k*d]; // Shared memory for count
 
-    // x and y
-    const int idxd = idx * d;
-    float x = d_data[idxd];
-    float y = d_data[idxd + 1];
+    int tid = threadIdx.x;
+    int idx = blockIdx.x * blockDim.x + tid;
+
+    // Initialize shared memory
+    if (tid < k * d) {
+        s_centroids[tid] = d_centroids[tid];
+    }
+    if (tid < k) {
+        s_count[tid] = 0;
+    }
+    if (tid < k * d) {
+        s_sum[tid] = 0.0f;
+    }
+    __syncthreads(); // Ensure all shared memory is initialized
 
     if (idx < n) {
-        // Find closest point
+        // x and y
+        const int idxd = idx * d;
+        float x = d_data[idxd];
+        float y = d_data[idxd + 1];
+
+        // Find closest centroid
         int min_class = 0;
-        float min_dist = abs(x - d_centroids[0]) + abs(y - d_centroids[1]);
+        float min_dist = abs(x - s_centroids[0]) + abs(y - s_centroids[1]);
         for (int c = 1; c < k; c++) {
-            const int cd = c*d;
-            float dist = abs(x - d_centroids[cd]) + abs(y - d_centroids[cd+1]);
+            const int cd = c * d;
+            float dist = abs(x - s_centroids[cd]) + abs(y - s_centroids[cd + 1]);
             if (dist < min_dist) {
                 min_dist = dist;
                 min_class = c;
             }
         }
 
-        // Update
+        // Update sum and count
         int min_class_d = min_class * d;
-        atomicAdd(&d_count[min_class], 1);
-        atomicAdd(&d_sum[min_class_d], x);
-        atomicAdd(&d_sum[min_class_d + 1], y);
+        atomicAdd(&s_count[min_class], 1);
+        atomicAdd(&s_sum[min_class_d], x);
+        atomicAdd(&s_sum[min_class_d + 1], y);
+    }
+    __syncthreads(); // Ensure all threads have finished updating sum and count
+
+    // Write shared memory results to global memory (only one thread per centroid)
+    if (tid < k) {
+        atomicAdd(&d_count[tid], s_count[tid]);
+    }
+    if (tid < k * d) {
+        atomicAdd(&d_sum[tid], s_sum[tid]);
     }
 }
+
 
 // Updates each centroid using d_sum and d_count where the index is d * centroid number (out of K).
 // d: number of dimensions (should be 2)
@@ -147,11 +177,12 @@ class KMeans_CUDA {
             // GPU setup
             CUDA_CHECK( cudaMemset(d_count, 0, k*sizeof(int)) );
             CUDA_CHECK( cudaMemset(d_sum, 0, k*d*sizeof(int)) );
-            int threads_per_block = 256;
+            int threads_per_block = 32;
             int blocks1 = (n + threads_per_block - 1) / threads_per_block;
+            size_t shared_mem_size = (2*k*d*sizeof(float)) + (k*sizeof(int));
 
             // Run kernel to get sums and counts
-            sum_and_count<<<blocks1, threads_per_block>>>(d_data, d_centroids, d_sum, d_count, n, d, k);
+            sum_and_count<<<blocks1, threads_per_block, shared_mem_size>>>(d_data, d_centroids, d_sum, d_count, n, d, k);
             CUDA_CHECK( cudaPeekAtLastError() );
             CUDA_CHECK( cudaDeviceSynchronize() );
 
