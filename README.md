@@ -1,4 +1,4 @@
-# KMeans implemented from scratch using CUDA  
+# K-Means implemented from scratch using CUDA  
 ## Kernels
 ```C++
 // Computes the sum (d_sum) and count (d_count) 
