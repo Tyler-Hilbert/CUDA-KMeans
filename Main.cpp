@@ -4,7 +4,6 @@
 #include <vector>
 #include <random>
 #include <fstream>
-#include <chrono>
 
 #include "KMeans_CUDA.cu"
 
@@ -12,7 +11,7 @@
 #define EPOCHS 10   // Number of Epochs
 
 // Generated Data Parameters
-#define N 100       // Number of data points
+#define N 1000000    // Number of data points
 #define D 2         // Dimensions of each point
 #define K 3         // Number of clusters
 // Generated Clusters
@@ -20,7 +19,7 @@
 #define K0Y 0.2
 #define K1X 0.8
 #define K1Y 0.2
-#define K2X 0.5 
+#define K2X 0.5
 #define K2Y 0.8
 
 using namespace std;
@@ -28,10 +27,6 @@ using namespace std;
 // Generate random clustered data
 // Data is in format { x0, y0, x1, y1, x2, y2... }
 void generateClusteredData(float *data) {
-    if (N != 100){
-        printf ("error: N\n");
-        return;
-    }
     if (D != 2){
         printf ("error: D\n");
         return;
@@ -105,41 +100,15 @@ int main() {
     srand(static_cast<unsigned>(time(nullptr)));
     vector<float> data(N * D); // Data is in format { x0, y0, x1, y1, x2, y2... }
     generateClusteredData(data.data());
-    writeDataToCSV(data, "kmeans_data.csv");
+    //writeDataToCSV(data, "kmeans_data.csv");
 
-    // Timing variables
-    chrono::time_point<chrono::system_clock> c_start;
-    chrono::time_point<chrono::system_clock> c_end;
-    vector<chrono::time_point<chrono::system_clock>> print_marks(EPOCHS);
-    vector<chrono::time_point<chrono::system_clock>> classify_marks(EPOCHS);
-    vector<chrono::time_point<chrono::system_clock>> update_marks(EPOCHS);
+    // Run KMeans
+    KMeans_CUDA model(data.data(), N, D, K); // Update here to change model
 
-    // CUDA KMeans from scratch
-    c_start = chrono::system_clock::now();
-    KMeans_CUDA model(data.data(), N, D, K);
-    CUDA_CHECK( cudaDeviceSynchronize() );
-    c_end = chrono::system_clock::now();
-
+    //model.printCentroids();
     for (int epoch = 0; epoch < EPOCHS; epoch++) {
-        printf ("Epoch %i\n", epoch);
-        model.printCentroids();
-        CUDA_CHECK( cudaDeviceSynchronize() );
-        print_marks.at(epoch) = chrono::system_clock::now();
-
-        model.classify();
-        CUDA_CHECK( cudaDeviceSynchronize() );
-        classify_marks.at(epoch) = chrono::system_clock::now();
-        
-        model.update();
-        CUDA_CHECK( cudaDeviceSynchronize() );
-        update_marks.at(epoch) = chrono::system_clock::now();
-    }
-    model.printCentroids();
-
-    // Print performance
-    printf("Constructor:\t%ld ns\n", chrono::duration_cast<chrono::nanoseconds>(c_end - c_start).count());
-    for (int epoch = 0; epoch < EPOCHS; epoch++) {
-        printf("Classify:\t%ld ns\n", chrono::duration_cast<chrono::nanoseconds>(classify_marks.at(epoch) - print_marks.at(epoch)).count());
-        printf("Update:\t\t%ld ns\n", chrono::duration_cast<chrono::nanoseconds>(update_marks.at(epoch) - classify_marks.at(epoch)).count());
+        //printf ("Epoch %i\n", epoch);
+        model.one_epoch();
+        //model.printCentroids();
     }
 }
