@@ -2,7 +2,7 @@
 
 Tested with 1,000,000 2d data points with 3 clusters on T4.  
 
-![CUDA KMeans Performance Test Table 1](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-LinearRegression/main/Performance/Table1.png)  
+![CUDA KMeans Performance Test Table 1](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Table1.png)  
 ## Table 1: 'cuda_api_sum'  
 | Name                  | Time (%) | Total Time (ms) | Num Calls | Avg (ms) | Med (ms) | Min (ms) | Max (ms) | StdDev (ms) |  
 |-----------------------|----------|-----------------|-----------|----------|----------|----------|----------|-------------|  
@@ -14,14 +14,14 @@ Tested with 1,000,000 2d data points with 3 clusters on T4.
 | cudaFree              | 0.1      | 618.7           | 4         | 154.7    | 128.5    | 4.2      | 357.5     | 174.7       |  
 | cuModuleGetLoadingMode| 0.0      | 0.7             | 1         | 0.7      | 0.7      | 0.7      | 0.7       | 0.0         |  
 
-![CUDA KMeans Performance Test Table 2](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-LinearRegression/main/Performance/Table2.png)  
+![CUDA KMeans Performance Test Table 2](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Table1.png)  
 ## Table 2: 'cuda_gpu_kern_sum'  
 | Kernel              | Time (%) | Total Time (ms) | Instances | Avg (ms) | Med (ms) | Min (ms) | Max (ms) | StdDev (ms) |  
 |---------------------|----------|-----------------|-----------|----------|----------|----------|----------|-------------|  
 | sum_and_count       | 100.0    | 69,530.1        | 10        | 6,953.0  | 7,021.0  | 6,340.9  | 7,021.1  | 215.0       |  
 | update_centroids    | 0.0      | 33.1            | 10        | 3.3      | 3.3      | 3.3      | 3.4      | 34.4        |  
 
-![CUDA KMeans Performance Test Table 3](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-LinearRegression/main/Performance/Table3.png)  
+![CUDA KMeans Performance Test Table 3](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Table3.png)  
 ## Table 3: 'cuda_gpu_mem_time_sum'  
 | Operation                         | Time (%) | Total Time (ms) | Count | Avg (ms) | Med (ms) | Min (ms) | Max (ms) | StdDev (ms) |  
 |-----------------------------------|----------|-----------------|-------|----------|----------|----------|----------|-------------|  
