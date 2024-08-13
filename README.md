@@ -60,8 +60,8 @@ sum_and_count kernel was optimized from 69.5ms to 7.2ms by reducing threads per 
 ### Table 3: 'cuda_gpu_mem_time_sum'  
  | Operation                  |  Time (%) | Total Time (ns) | Count | Avg (ns) | Med (ns) | Min (ns) | Max (ns) | StdDev (ns) |  
  |----------------------------|-----------|-----------------|-------|----------|----------|----------|----------|-------------|  
- | CUDA memcpy Host-to-Device | 8.000 | 2 | 4.000 | 4.000 | 0.000 | 8.000 | 5.657 |  
- | CUDA memcpy Device-to-Host | 0.000 | 20 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |  
- | CUDA memset                | 0.000 | 10 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000
+ | CUDA memcpy Host-to-Device | 98.1 | 1,718,202 | 2 | 859,101.0 | 859,101.0 | 704 | 1,717,498 | 1,213,956.7 |  
+ | CUDA memcpy Device-to-Host | 1.0 | 17,503 | 10 | 1,750.3 | 1,664.0 | 1,631 | 2,144 | 199.7 |  
+ | CUDA memset                | 0.9 | 15,585 | 20 | 779.3 | 672.0 | 640 | 1,408 | 262.3 |  
  
 ![CUDA KMeans Performance Test Table 3](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Table3.png) 
