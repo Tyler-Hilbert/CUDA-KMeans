@@ -24,7 +24,10 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 using namespace std;
 
 
-// Computes the sum (d_sum) and count (d_count) for each of the k clusters.
+// Computes the sum (d_sum) and count (d_count) for each of the k clusters labeled in d_centroids.
+// n: number of data points
+// d: number of dimensions (should be 2)
+// k: number of clusters
 static __global__ void sum_and_count(
     const float *d_data,
     const float *d_centroids,
@@ -62,7 +65,9 @@ static __global__ void sum_and_count(
     }
 }
 
-// Updates each centroid using d_sum and d_count
+// Updates each centroid using d_sum and d_count where the index is d * centroid number (out of K).
+// d: number of dimensions (should be 2)
+// k: number of clusters
 static __global__ void update_centroids(
     float *d_centroids,
     const float *d_sum,

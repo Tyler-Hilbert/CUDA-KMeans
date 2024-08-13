@@ -1,25 +1,33 @@
 # KMeans implemented from scratch using CUDA  
 ## Kernels
 ```C++
-// Computes the sum (d_centroids) and counts (d_counts)
-//   for each of the classes in d_classes pertaining to data d_data.
+// Computes the sum (d_sum) and count (d_count) 
+//    for each of the k clusters labeled in d_centroids.
+// n: number of data points
+// d: number of dimensions
+// k: number of clusters
 static __global__ void sum_and_count(
-    const float* d_data,
-    const int* d_classes,
-    float* d_centroids,
-    int* d_counts,
+    const float *d_data,
+    const float *d_centroids,
+    float *d_sum,
+    int *d_count,
     int n,
     int d,
     int k
-);
+)
 ```
 
 ```C++
-// Computes the average assuming the sum is in d_centroids and the count is in d_counts.
-static __global__ void compute_new_centroids(
-    float* d_centroids,
-    const int* d_counts,
-    int d
+// Updates each centroid using d_sum and d_count
+//    where the index is d * centroid number (out of k).
+// d: number of dimensions
+// k: number of clusters
+static __global__ void update_centroids(
+    float *d_centroids,
+    const float *d_sum,
+    const int *d_count,
+    int d,
+    int k
 );
 ```
 
