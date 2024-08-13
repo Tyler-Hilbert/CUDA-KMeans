@@ -65,3 +65,5 @@ sum_and_count kernel was optimized from 69.5ms to 7.2ms by reducing threads per 
  | CUDA memset                | 0.9 | 15,585 | 20 | 779.3 | 672.0 | 640 | 1,408 | 262.3 |  
  
 ![CUDA KMeans Performance Test Table 3](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Table3.png) 
+
+![CUDA KMeans Performance Test Table 4](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Table4.png) 
