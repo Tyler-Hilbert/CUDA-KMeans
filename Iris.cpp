@@ -53,11 +53,11 @@ vector<IrisData> readCSV(const string& filename) {
 
         getline(ss, temp, ',');
         if (temp == "Iris-setosa") {
-          iris.species = 0;
+            iris.species = 0;
         } else if (temp == "Iris-versicolor") {
-          iris.species = 1;
+            iris.species = 1;
         } else {
-          iris.species = 2;
+            iris.species = 2;
         }
 
         data.push_back(iris);
@@ -82,11 +82,11 @@ int main() {
     const int pwi = N*3;
     int i = 0;
     for (IrisData &iris : iris_data) {
-      h_data[i+sli] = iris.sepal_length;
-      h_data[i+swi] = iris.sepal_width;
-      h_data[i+pli] = iris.petal_length;
-      h_data[i+pwi] = iris.petal_width;
-      h_species[i++] = iris.species;
+        h_data[i+sli] = iris.sepal_length;
+        h_data[i+swi] = iris.sepal_width;
+        h_data[i+pli] = iris.petal_length;
+        h_data[i+pwi] = iris.petal_width;
+        h_species[i++] = iris.species;
     }
 
     // Run KMeans on GPU
