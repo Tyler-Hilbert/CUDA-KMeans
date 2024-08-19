@@ -3,11 +3,17 @@
 #ifndef __KMEANS_CU__
 #define __KMEANS_CU__
 
+#include "KMeans_CUDA.h"
+
 #include <stdio.h>
 #include <random>
 #include <stdexcept>
+#include <string>
 
 #include <cuda_runtime.h>
+
+using namespace std;
+
 
 
 #define CUDA_CHECK(ans) { gpuAssert((ans), __FILE__, __LINE__); }
@@ -21,14 +27,12 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 }
 
 
-using namespace std;
-
 
 // Computes the sum (d_sum) and count (d_count) for each of the k clusters labeled in d_centroids.
 // n: number of data points
-// d: number of dimensions (should be 2)
+// d: number of dimensions
 // k: number of clusters
-// Uses shared memory of 3*k*d
+// Uses shared memory of (k+2*k*d)
 static __global__ void sum_and_count(
     const float *d_data,
     const float *d_centroids,
@@ -38,11 +42,14 @@ static __global__ void sum_and_count(
     int d,
     int k
 ) {
-    // Shared memory: 0 to k*d: centroids, k*d to 2*k*d: sum, 2*k*d to 3*k*d: count
+    // Shared memory: 
+    //   0 to k: centroids,
+    //   k to (k+k*d): sum,
+    //   (k+k*d) to : count
     extern __shared__ float s_shared[];
-    float *s_centroids = s_shared;      // Shared memory for centroids
-    float *s_sum = &s_shared[k*d];    // Shared memory for sum
-    int *s_count = (int*)&s_sum[k*d]; // Shared memory for count
+    float *s_centroids = s_shared;          // Shared memory for centroids
+    float *s_sum = &s_centroids[k];    // Shared memory for sum
+    float *s_count = &s_sum[k*d];       // Shared memory for count
 
     int tid = threadIdx.x;
     int idx = blockIdx.x * blockDim.x + tid;
@@ -60,17 +67,21 @@ static __global__ void sum_and_count(
     __syncthreads(); // Ensure all shared memory is initialized
 
     if (idx < n) {
-        // x and y
+        // Find closest distance
         const int idxd = idx * d;
-        float x = d_data[idxd];
-        float y = d_data[idxd + 1];
 
         // Find closest centroid
         int min_class = 0;
-        float min_dist = abs(x - s_centroids[0]) + abs(y - s_centroids[1]);
+        float dist = 0;
+        for (int i = 0; i < d; i++) {
+            dist += abs(d_data[i+idxd] - s_centroids[i]);
+        }
+        float min_dist = dist;
         for (int c = 1; c < k; c++) {
-            const int cd = c * d;
-            float dist = abs(x - s_centroids[cd]) + abs(y - s_centroids[cd + 1]);
+            dist = 0;
+            for (int i = 0; i < d; i++) {
+                dist += abs(d_data[i+idxd] - s_centroids[i+c*d]);
+            }
             if (dist < min_dist) {
                 min_dist = dist;
                 min_class = c;
@@ -78,16 +89,16 @@ static __global__ void sum_and_count(
         }
 
         // Update sum and count
-        int min_class_d = min_class * d;
         atomicAdd(&s_count[min_class], 1);
-        atomicAdd(&s_sum[min_class_d], x);
-        atomicAdd(&s_sum[min_class_d + 1], y);
+        for (int i = 0; i < d; i++) {
+            atomicAdd(&s_sum[i+min_class*d], d_data[i+idxd]);
+        }
     }
     __syncthreads(); // Ensure all threads have finished updating sum and count
 
     // Write shared memory results to global memory (only one thread per centroid)
     if (tid < k) {
-        atomicAdd(&d_count[tid], s_count[tid]);
+        atomicAdd(&d_count[tid], (int)s_count[tid]);
     }
     if (tid < k * d) {
         atomicAdd(&d_sum[tid], s_sum[tid]);
@@ -95,8 +106,9 @@ static __global__ void sum_and_count(
 }
 
 
+
 // Updates each centroid using d_sum and d_count where the index is d * centroid number (out of K).
-// d: number of dimensions (should be 2)
+// d: number of dimensions
 // k: number of clusters
 static __global__ void update_centroids(
     float *d_centroids,
@@ -110,109 +122,129 @@ static __global__ void update_centroids(
     // Update centroids
     if (idx < k) {
         const int idxd = idx * d;
-        d_centroids[idxd] = d_sum[idxd] / d_count[idx];
-        d_centroids[idxd+1] = d_sum[idxd+1] / d_count[idx];
+        for (int i = 0; i < d; i++) {
+          if (d_count[idx] != 0) {
+            d_centroids[i+idxd] = d_sum[i+idxd] / d_count[idx];
+          } else {
+            d_centroids[i+idxd] = 0;
+          }
+        }
     }
 }
 
-class KMeans_CUDA {
-    public:
-        
-        KMeans_CUDA(
-            float *data,
-            int n, 
-            int d,
-            int k
-        ) {
-
-            if (d != 2) {
-                throw invalid_argument("Invalid d");
-            }
-            if (k != 3) {
-                throw invalid_argument("Invalid k");
-            }
-
-            // CPU stack memory
-            this->n = n;
-            this->d = d;
-            this->k = k;
-            this->h_data = data;
-
-            // CPU heap memory
-            h_centroids = new float[d*k];
-            for (int i = 0; i < d*k; i++) {
-                h_centroids[i] = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-            }
-
-            // GPU memory
-            CUDA_CHECK( cudaMalloc(&d_data,         n*d*sizeof(float)) );
-            CUDA_CHECK( cudaMalloc(&d_centroids,    k*d*sizeof(float)) );
-            CUDA_CHECK( cudaMalloc(&d_count,        k*sizeof(int)) );
-            CUDA_CHECK( cudaMalloc(&d_sum,          k*d*sizeof(float)) );
-
-            CUDA_CHECK( cudaMemcpy(d_data, h_data, n*d*sizeof(float), cudaMemcpyHostToDevice) );
-            CUDA_CHECK( cudaMemcpy(d_centroids, h_centroids, k*d*sizeof(float), cudaMemcpyHostToDevice) );
 
 
+KMeans_CUDA::KMeans_CUDA(
+    float *data,
+    int n,
+    int d,
+    int k
+) {
+
+    // CPU stack memory
+    this->n = n;
+    this->d = d;
+    this->k = k;
+    this->h_data = data;
+
+    // CPU heap memory
+    h_centroids = new float[d*k];
+    for (int i = 0; i < d*k; i++) {
+        h_centroids[i] = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    }
+
+    // GPU memory
+    CUDA_CHECK( cudaMalloc(&d_data,         n*d*sizeof(float)) );
+    CUDA_CHECK( cudaMalloc(&d_centroids,    k*d*sizeof(float)) );
+    CUDA_CHECK( cudaMalloc(&d_count,        k*sizeof(int)) );
+    CUDA_CHECK( cudaMalloc(&d_sum,          k*d*sizeof(float)) );
+
+    CUDA_CHECK( cudaMemcpy(d_data,      h_data,       n*d*sizeof(float), cudaMemcpyHostToDevice) );
+    CUDA_CHECK( cudaMemcpy(d_centroids, h_centroids,  k*d*sizeof(float), cudaMemcpyHostToDevice) );
+}
+
+
+
+KMeans_CUDA::~KMeans_CUDA() {
+
+    // Note don't delete h_data since it lives in Main.cpp
+    delete[] h_centroids;
+
+    CUDA_CHECK( cudaFree(d_data) );
+    CUDA_CHECK( cudaFree(d_centroids) );
+    CUDA_CHECK( cudaFree(d_count) );
+    CUDA_CHECK( cudaFree(d_sum) );
+}
+
+
+
+// Prints out the centroids
+void KMeans_CUDA::print_centroids() {
+    for (int i = 0; i < k; i++) {
+        string s = "";
+        for (int j = 0; j < d; j++) {
+            s += to_string(h_centroids[i*d + j]);
+        }
+        s += "\n";
+        printf (s.c_str());
+    }
+}
+
+
+
+// Prints out predictions
+void KMeans_CUDA::print_predictions() {
+    for (int p = 0; p < n; p++) {
+        // Find closest centroid
+        int min_class = 0;
+        float dist = 0;
+        for (int i = 0; i < d; i++) {
+            dist += abs(h_data[i+p*d] - h_centroids[i]);
         }
 
-        ~KMeans_CUDA() {
-            // Note don't delete h_data since it lives in Main.cpp
-            delete[] h_centroids;
-
-            CUDA_CHECK( cudaFree(d_data) );
-            CUDA_CHECK( cudaFree(d_centroids) );
-            CUDA_CHECK( cudaFree(d_count) );
-            CUDA_CHECK( cudaFree(d_sum) );
-        }
-
-        void printCentroids() {
-            for (int i = 0; i < k; i++) {
-                printf ("x %f  y %f\n", h_centroids[i*d], h_centroids[i*d+1]);
+        float min_dist = dist;
+        for (int c = 1; c < k; c++) {
+            dist = 0;
+            for (int i = 0; i < d; i++) {
+                dist += abs(h_data[i+p*d] - h_centroids[i+c*d]);
+            }
+            if (dist < min_dist) {
+                min_dist = dist;
+                min_class = c;
             }
         }
 
-        // Runs one epoch of KMeans
-        void one_epoch() {
-            // GPU setup
-            CUDA_CHECK( cudaMemset(d_count, 0, k*sizeof(int)) );
-            CUDA_CHECK( cudaMemset(d_sum, 0, k*d*sizeof(int)) );
-            int threads_per_block = 32;
-            int blocks1 = (n + threads_per_block - 1) / threads_per_block;
-            size_t shared_mem_size = (2*k*d*sizeof(float)) + (k*sizeof(int));
+        printf ("%i ", min_class);
+    }
+    printf ("\n");
+}
 
-            // Run kernel to get sums and counts
-            sum_and_count<<<blocks1, threads_per_block, shared_mem_size>>>(d_data, d_centroids, d_sum, d_count, n, d, k);
-            CUDA_CHECK( cudaPeekAtLastError() );
-            CUDA_CHECK( cudaDeviceSynchronize() );
 
-            // Run kernel to update centroids (calculate average)
-            int blocks2 = (k + threads_per_block - 1) / threads_per_block;
-            update_centroids<<<blocks2, threads_per_block>>>(d_centroids, d_sum, d_count, d, k);
-            CUDA_CHECK( cudaPeekAtLastError() );
-            CUDA_CHECK( cudaDeviceSynchronize() );
 
-            // Copy data back to host
-            CUDA_CHECK( cudaMemcpy(h_centroids, d_centroids, k*d*sizeof(int), cudaMemcpyDeviceToHost) );
-        }
+// Runs one epoch of KMeans
+void KMeans_CUDA::one_epoch() {
+    // GPU setup
+    CUDA_CHECK( cudaMemset(d_count, 0, k*sizeof(int)) );
+    CUDA_CHECK( cudaMemset(d_sum,   0, k*d*sizeof(float)) );
+    int threads_per_block = 32;
+    int blocks1 = (n + threads_per_block - 1) / threads_per_block;
+    size_t shared_mem_size = (2*k*d*sizeof(float)) + (k*sizeof(float));
 
-    private:
-        // Data
-        float *h_data; // Data is in format { x0, y0, x1, y1, x2, y2... }. Memory stored in .cpp not class. Size n*d
-        float *d_data; // Pointer to data on GPU. Size n*d
+    // Run kernel to get sums and counts
+    sum_and_count<<<blocks1, threads_per_block, shared_mem_size>>>(d_data, d_centroids, d_sum, d_count, n, d, k);
+    CUDA_CHECK( cudaPeekAtLastError() );
+    CUDA_CHECK( cudaDeviceSynchronize() );
 
-        // Learned centroids
-        float *h_centroids; // Pointer to centroids in format { c0x, c0y, c1x, c1y, c2x, c2y } on heap. Size k*d
-        float *d_centroids; // Pointer to centroids on GPU. Size k*d
+    // Run kernel to update centroids (calculate average)
+    int blocks2 = (k + threads_per_block - 1) / threads_per_block;
+    update_centroids<<<blocks2, threads_per_block>>>(d_centroids, d_sum, d_count, d, k);
+    CUDA_CHECK( cudaPeekAtLastError() );
+    CUDA_CHECK( cudaDeviceSynchronize() );
 
-        // Count and Sum
-        float *d_sum; // Size k*d
-        int *d_count; // Size k
+    // Copy data back to host
+    CUDA_CHECK( cudaMemcpy(h_centroids, d_centroids, k*d*sizeof(float), cudaMemcpyDeviceToHost) );
+}
 
-        // Dataset 
-        int n; // Number of data elements (i. e. { x0, y0, x1, y1, x2, y2} would be 3)
-        int d; // Number of dimensions
-        int k; // Number of clusters
-};
+
 
 #endif // __KMEANS_CU__
