@@ -74,13 +74,13 @@ static __global__ void sum_and_count(
         int min_class = 0;
         float dist = 0;
         for (int i = 0; i < d; i++) {
-            dist += abs(d_data[i+idxd] - s_centroids[i]);
+            dist += pow(d_data[i+idxd] - s_centroids[i], 2);
         }
         float min_dist = dist;
         for (int c = 1; c < k; c++) {
             dist = 0;
             for (int i = 0; i < d; i++) {
-                dist += abs(d_data[i+idxd] - s_centroids[i+c*d]);
+                dist += pow(d_data[i+idxd] - s_centroids[i+c*d], 2);
             }
             if (dist < min_dist) {
                 min_dist = dist;
@@ -229,14 +229,14 @@ void KMeans_CUDA::print_predictions() {
         int min_class = 0;
         float dist = 0;
         for (int i = 0; i < d; i++) {
-            dist += abs(h_data[i+p*d] - h_centroids[i]);
+            dist += pow(h_data[i+p*d] - h_centroids[i], 2);
         }
 
         float min_dist = dist;
         for (int c = 1; c < k; c++) {
             dist = 0;
             for (int i = 0; i < d; i++) {
-                dist += abs(h_data[i+p*d] - h_centroids[i+c*d]);
+                dist += pow(h_data[i+p*d] - h_centroids[i+c*d], 2);
             }
             if (dist < min_dist) {
                 min_dist = dist;

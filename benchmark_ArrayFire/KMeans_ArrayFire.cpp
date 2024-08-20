@@ -61,8 +61,8 @@ void KMeans_ArrayFire::print_predictions() {
     array d_data_broadcast = tile(d_data, 1,  K,  1);
     // Centroids Broadcast
     array d_centroids_broadcast = tile(d_centroids, N,  1,  1);
-    // Manhattan distance
-    array d_distance = sum(abs(d_data_broadcast - d_centroids_broadcast), 2);
+    // Euclidean distance (squared)
+    array d_distance = sum(pow(d_data_broadcast - d_centroids_broadcast, 2), 2);
     // Cluster
     array d_min_val, d_min_i;
     min(d_min_val, d_min_i, d_distance, 1);
@@ -76,8 +76,8 @@ void KMeans_ArrayFire::one_epoch() {
     // Broadcast
     array d_data_broadcast = tile(d_data, 1,  K,  1);
     array d_centroids_broadcast = tile(d_centroids, N,  1,  1);
-    // Manhattan distance
-    array d_distance = sum(abs(d_data_broadcast - d_centroids_broadcast), 2);
+    // Euclidean distance (squared)
+    array d_distance = sum(pow(d_data_broadcast - d_centroids_broadcast, 2), 2);
     ///af_print (d_distance);
 
     // Cluster
