@@ -1,4 +1,11 @@
 # K-Means implemented from scratch using CUDA  
+## Usage  
+```C++
+KMeans_CUDA model (data, N, D, K); // Where data is AoS, N is number of data points, D is number of dimensions and K is number of clusters
+model.one_epoch(); // Trains one epoch
+model.print_predictions(); // Classify data
+```  
+
 ## Kernels
 ```C++
 // Updates each centroid using d_sum and d_count
@@ -30,13 +37,6 @@ static __global__ void sum_and_count(
     int d,
     int k
 );
-```  
-
-## Usage  
-```C++
-KMeans_CUDA model (data, N, D, K); // Where data is AoS, N is number of data points, D is number of dimensions and K is number of clusters
-model.one_epoch(); // Trains one epoch
-model.print_predictions(); // Classify data
 ```  
 
 ## Performance  
