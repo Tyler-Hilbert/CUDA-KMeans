@@ -9,8 +9,8 @@ x = iris.iloc[:, [0, 1, 2, 3]].values
 kmeans = KMeans(
     n_clusters = 3,
     init = 'k-means++',
-    max_iter = 300,
-    n_init = 10,
+    max_iter = 10,
+    n_init = 1,
     random_state = 0
 )
 y_kmeans = kmeans.fit_predict(x)
