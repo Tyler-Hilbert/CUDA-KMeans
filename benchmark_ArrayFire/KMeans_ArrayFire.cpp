@@ -25,7 +25,7 @@ KMeans_ArrayFire::KMeans_ArrayFire(
     this->h_data = data;
 
     // Array Fire
-    af::setDevice(0);
+    af::setBackend(AF_BACKEND_CUDA);
     setSeed(static_cast<unsigned long long>(time(0)));
 
     // Data
