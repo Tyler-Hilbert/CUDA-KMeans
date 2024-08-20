@@ -14,7 +14,7 @@ class KMeans_CUDA {
 
     private:
         // Data
-        float *h_data; // Data is in format Memory stored in .cpp not class. Size n*d
+        float *h_data; // Size n*d
         float *d_data; // Pointer to data on GPU. Size n*d
 
         // Learned centroids

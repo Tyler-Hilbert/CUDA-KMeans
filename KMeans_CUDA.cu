@@ -45,7 +45,7 @@ static __global__ void sum_and_count(
     // Shared memory: 
     //   0 to k: centroids,
     //   k to (k+k*d): sum,
-    //   (k+k*d) to : count
+    //   (k+k*d) to (k+2*k*d): count
     extern __shared__ float s_shared[];
     float *s_centroids = s_shared;          // Shared memory for centroids
     float *s_sum = &s_centroids[k];    // Shared memory for sum
@@ -125,8 +125,6 @@ static __global__ void update_centroids(
         for (int i = 0; i < d; i++) {
           if (d_count[idx] != 0) {
             d_centroids[i+idxd] = d_sum[i+idxd] / d_count[idx];
-          } else {
-            d_centroids[i+idxd] = 0;
           }
         }
     }
@@ -145,13 +143,44 @@ KMeans_CUDA::KMeans_CUDA(
     this->n = n;
     this->d = d;
     this->k = k;
-    this->h_data = data;
 
     // CPU heap memory
+    // Centroids
     h_centroids = new float[d*k];
     for (int i = 0; i < d*k; i++) {
         h_centroids[i] = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
     }
+
+    // Normalize data
+    float *mins = new float[d];
+    float *maxs = new float[d];
+    for (int i = 0; i < d; i++) {
+        mins[i] = data[i];
+        maxs[i] = data[i];
+    }
+    for (int i = 0; i < n*d; i++) {
+        mins[i%d] = min(mins[i%d], data[i]);
+        maxs[i%d] = max(maxs[i%d], data[i]);
+    }
+    /*
+    // Print min and max for debug
+    for (int i = 0; i < d; i++) {
+        printf ("min %f, max %f\n", mins[i], maxs[i]);
+    }
+    */
+    h_data = new float[n*d];
+    for (int i = 0; i < n*d; i++) {
+        h_data[i] = (data[i] - mins[i%d]) / maxs[i%d];
+    }
+    delete[] mins;
+    delete[] maxs;
+    /*
+    // Print data for debug
+    for (int i = 0; i < n*d; i++) {
+        printf ("%f ", h_data[i]);
+    }
+    printf ("\n");
+    */
 
     // GPU memory
     CUDA_CHECK( cudaMalloc(&d_data,         n*d*sizeof(float)) );
@@ -167,7 +196,7 @@ KMeans_CUDA::KMeans_CUDA(
 
 KMeans_CUDA::~KMeans_CUDA() {
 
-    // Note don't delete h_data since it lives in Main.cpp
+    delete[] h_data;
     delete[] h_centroids;
 
     CUDA_CHECK( cudaFree(d_data) );
@@ -184,6 +213,7 @@ void KMeans_CUDA::print_centroids() {
         string s = "";
         for (int j = 0; j < d; j++) {
             s += to_string(h_centroids[i*d + j]);
+            s += "  ";
         }
         s += "\n";
         printf (s.c_str());

@@ -44,6 +44,8 @@ vector<IrisData> readCSV(const string& filename) {
         string temp;
         IrisData iris;
 
+        getline(ss, temp, ','); // Skip id
+
         getline(ss, temp, ',');
         iris.sepal_length = stof(temp);
 
@@ -110,7 +112,7 @@ void vectorToAoS(vector<IrisData> &iris_data, int N, char *h_species, float *h_d
 }
 
 int main() {
-    string filename = "iris.csv";
+    string filename = "TestData/iris.csv";
     vector<IrisData> iris_data = readCSV(filename);
 
     const int N = iris_data.size();
