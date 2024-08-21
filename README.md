@@ -43,4 +43,5 @@ static __global__ void sum_and_count(
 Go to: https://github.com/Tyler-Hilbert/CUDA-KMeans/tree/52db75728794449dc152989c648e03b632d24c08 for most recent performance tests.  
 
 ## Performance compared to scikit-learn and ArrayFire  
+It is shown that this implementations of K-Means outperforms scitkit-learn and ArrayFire on a T4.  
 ![CUDA KMeans Performance vs scikit-learn and ArrayFire](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Comparison.png) 
