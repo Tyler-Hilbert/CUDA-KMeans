@@ -1,4 +1,4 @@
-# KMeans in scikit-learn for comparison. (Not currently included in benchmark / performance test).
+# KMeans in scikit-learn for comparison.
 
 import pandas as pd
 import matplotlib.pyplot as plt 

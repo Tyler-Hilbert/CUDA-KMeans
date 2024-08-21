@@ -1,4 +1,4 @@
-// KMeans in ArrayFire for comparison. (Not currently included in benchmark / performance test).
+// KMeans in ArrayFire for comparison.
 // Reference (with modifications): https://arrayfire.org/docs/machine_learning_2kmeans_8cpp-example.htm
 
 #ifndef __KMEANS_ARRAY_FIRE_H__
