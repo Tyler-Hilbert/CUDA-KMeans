@@ -36,9 +36,10 @@ KMeans_ArrayFire::KMeans_ArrayFire(
     d_data = (d_data - min(d_data, 0)) / max(d_data, 0);
     ///af_print(d_data);
 
-    // Initialize centroids from random data
-    array random_indices = randu(K, u32) * N; // Generate K random indices in range [0, N)
-    d_centroids = d_data(1, random_indices, span);  // Select rows from d_data
+    // Initialize centroids from random data from dataset
+    array random_indices = floor(randu(K) * N).as(u32);
+    d_centroids = d_data(random_indices, span);
+    d_centroids = moddims(d_centroids, 1, K, D, 1);
     ///af_print (d_centroids);
 }
 
