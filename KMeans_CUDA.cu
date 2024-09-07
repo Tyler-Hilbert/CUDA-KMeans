@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <random>
+#include <ctime>
 #include <stdexcept>
 #include <string>
 
@@ -138,6 +139,8 @@ KMeans_CUDA::KMeans_CUDA(
     int d,
     int k
 ) {
+    // Seed the random number generator
+    srand(static_cast<unsigned int>(time(0)));
 
     // CPU stack memory
     this->n = n;
@@ -145,12 +148,6 @@ KMeans_CUDA::KMeans_CUDA(
     this->k = k;
 
     // CPU heap memory
-    // Centroids
-    h_centroids = new float[d*k];
-    for (int i = 0; i < d*k; i++) {
-        h_centroids[i] = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-    }
-
     // Normalize data
     float *mins = new float[d];
     float *maxs = new float[d];
@@ -181,6 +178,15 @@ KMeans_CUDA::KMeans_CUDA(
     }
     printf ("\n");
     */
+
+    // Centroids
+    h_centroids = new float[d*k];
+    for (int i = 0; i < k; i++) { // Select a datapoint for each centroid initalization
+        int data_index = rand() % n;
+        for (int j = 0; j < d; j++) { // Select a dimension
+            h_centroids[i*d+j] = h_data[data_index*d+j];
+        }
+    }
 
     // GPU memory
     CUDA_CHECK( cudaMalloc(&d_data,         n*d*sizeof(float)) );
