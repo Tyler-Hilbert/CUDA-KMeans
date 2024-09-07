@@ -1,0 +1,1 @@
+This directory is where images of the performance are stored.

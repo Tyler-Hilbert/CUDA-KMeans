@@ -1,0 +1,1 @@
+This directory isn't part of the library, but is the source code for the same algorithm implemented in ArrayFire with a CUDA backend as a benchmark reference.

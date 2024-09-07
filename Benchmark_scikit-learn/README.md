@@ -1,0 +1,1 @@
+This directory isn't part of the library, but is the source code for the same algorithm implemented in scikit-learn (not optimized on the GPU) as a benchmark reference.
