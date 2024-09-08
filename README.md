@@ -12,7 +12,7 @@ model.print_predictions(); // Classify data
 //    where the index is d * centroid number (out of k).
 // d: number of dimensions
 // k: number of clusters
-static __global__ void update_centroids(
+__global__ void update_centroids(
     float *d_centroids,
     const float *d_sum,
     const int *d_count,
@@ -28,7 +28,7 @@ static __global__ void update_centroids(
 // d: number of dimensions
 // k: number of clusters
 // Uses shared memory of (k+2*k*d)
-static __global__ void sum_and_count(
+__global__ void sum_and_count(
     const float *d_data,
     const float *d_centroids,
     float *d_sum,
