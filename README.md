@@ -45,4 +45,4 @@ Go to: https://github.com/Tyler-Hilbert/CUDA-KMeans/tree/52db75728794449dc152989
 ## Performance compared to scikit-learn and ArrayFire  
 It is shown that this implementations of K-Means outperforms scitkit-learn and ArrayFire on a T4.  
 ![CUDA KMeans Performance vs scikit-learn and ArrayFire](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Comparison.png)  
-Note: The faster performance of this library compared to the ArrayFire implementation is likely because ArrayFire's algorithm uses a broadcast operation on the centroids, which is computationally expensive, whereas my implementation avoids this by iterating over each centroid within the kernel.  
+Note: The faster performance of this library compared to the ArrayFire implementation is likely because ArrayFire's algorithm uses a broadcast operation on the centroids, which is memory expensive, whereas my implementation avoids this by iterating over each centroid within the kernel.  
