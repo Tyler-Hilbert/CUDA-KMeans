@@ -74,24 +74,21 @@ void KMeans_ArrayFire::print_predictions() {
 
 // Runs one epoch of KMeans
 void KMeans_ArrayFire::one_epoch() {
-    // Broadcast
+    // Broadcast data and centroids to NxKxD size
     array d_data_broadcast = tile(d_data, 1,  K,  1);
     array d_centroids_broadcast = tile(d_centroids, N,  1,  1);
-    // Euclidean distance (squared)
+
+    // Calculate Euclidean distance (squared)
     array d_distance = sum(pow(d_data_broadcast - d_centroids_broadcast, 2), 2);
-    ///af_print (d_distance);
 
     // Cluster
     array d_min_val, d_min_i;
     min(d_min_val, d_min_i, d_distance, 1);
-    ///af_print(d_min_i);
 
     // Update centroids
     gfor(seq ii, K) {
         d_centroids(span, ii, span) = sum(d_data*(d_min_i==ii)) / (sum(d_min_i==ii)+1e-5);
     }
-
-    ///af_print (d_centroids);
 }
 
 #endif // __KMEANS_ARRAY_FIRE_CPP__
