@@ -68,7 +68,6 @@ static __global__ void sum_and_count(
     __syncthreads(); // Ensure all shared memory is initialized
 
     if (idx < n) {
-        // Find closest distance
         const int idxd = idx * d;
 
         // Find closest centroid
