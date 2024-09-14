@@ -188,6 +188,7 @@ KMeans_CUDA::KMeans_CUDA(
     }
 
     // GPU memory
+    cudaDeviceSynchronize(); // For Nsight performance testing only!!!!!!
     CUDA_CHECK( cudaMalloc(&d_data,         n*d*sizeof(float)) );
     CUDA_CHECK( cudaMalloc(&d_centroids,    k*d*sizeof(float)) );
     CUDA_CHECK( cudaMalloc(&d_count,        k*sizeof(int)) );
