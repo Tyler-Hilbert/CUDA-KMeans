@@ -132,6 +132,48 @@ static __global__ void update_centroids(
 
 
 
+// Computes error and updates d_error
+// Note this is currently only for debugging purposes as it recomputes work done in sum_and_count
+// n: number of data points
+// d: number of dimensions
+// k: number of clusters
+static __global__ void calculate_error(
+    const float *d_data,
+    const float *d_centroids,
+    float *d_error,
+    int n,
+    int d,
+    int k
+) {
+    int tid = threadIdx.x;
+    int idx = blockIdx.x * blockDim.x + tid;
+
+    if (idx < n) {
+        const int idxd = idx * d;
+
+        // Find closest centroid
+        float dist = 0;
+        for (int i = 0; i < d; i++) {
+            dist += pow(d_data[i+idxd] - d_centroids[i], 2);
+        }
+        float min_dist = dist;
+        for (int c = 1; c < k; c++) {
+            dist = 0;
+            for (int i = 0; i < d; i++) {
+                dist += pow(d_data[i+idxd] - d_centroids[i+c*d], 2);
+            }
+            if (dist < min_dist) {
+                min_dist = dist;
+            }
+        }
+
+        // Add error
+        atomicAdd(d_error, min_dist);
+    }
+}
+
+
+
 KMeans_CUDA::KMeans_CUDA(
     float *data,
     int n,
@@ -278,6 +320,34 @@ void KMeans_CUDA::one_epoch() {
 
     // Copy data back to host
     CUDA_CHECK( cudaMemcpy(h_centroids, d_centroids, k*d*sizeof(float), cudaMemcpyDeviceToHost) );
+}
+
+
+
+float KMeans_CUDA::compute_error() {
+    printf ("Note: The compute error function isn't optimized currently and is only used for debugging\n");
+
+    // GPU setup
+    float *d_error;
+    float h_error = 0;
+    CUDA_CHECK( cudaMalloc(&d_error, sizeof(float)) );
+    CUDA_CHECK( cudaMemset(d_error, 0, sizeof(float)) );
+
+    int threads_per_block = 32;
+    int blocks1 = (n + threads_per_block - 1) / threads_per_block;
+
+    // Run kernel to get sums and counts
+    calculate_error<<<blocks1, threads_per_block>>>(d_data, d_centroids, d_error, n, d, k);
+    CUDA_CHECK( cudaPeekAtLastError() );
+    CUDA_CHECK( cudaDeviceSynchronize() );
+
+    // Copy data back to host
+    CUDA_CHECK( cudaMemcpy(&h_error, d_error, sizeof(float), cudaMemcpyDeviceToHost) );
+
+    // Free memory
+    CUDA_CHECK( cudaFree(d_error) );
+
+    return h_error;
 }
 
 
