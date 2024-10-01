@@ -12,6 +12,8 @@ class KMeans_CUDA {
         void print_centroids();
         void print_predictions();
 
+        float compute_error();
+
     private:
         // Data
         float *h_data; // Size n*d
