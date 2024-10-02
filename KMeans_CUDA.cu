@@ -12,6 +12,7 @@
 #include <string>
 
 #include <cuda_runtime.h>
+#include <float.h>
 
 using namespace std;
 
@@ -44,12 +45,12 @@ static __global__ void sum_and_count(
     int k
 ) {
     // Shared memory: 
-    //   0 to k: centroids,
-    //   k to (k+k*d): sum,
-    //   (k+k*d) to (k+2*k*d): count
+    //   0 to k*d: centroids,
+    //   k*d to 2*k*d: sum,
+    //   2*k*d to 3*k*d: count
     extern __shared__ float s_shared[];
-    float *s_centroids = s_shared;          // Shared memory for centroids
-    float *s_sum = &s_centroids[k];    // Shared memory for sum
+    float *s_centroids = s_shared;       // Shared memory for centroids
+    float *s_sum = &s_centroids[k*d];    // Shared memory for sum
     float *s_count = &s_sum[k*d];       // Shared memory for count
 
     int tid = threadIdx.x;
@@ -71,13 +72,10 @@ static __global__ void sum_and_count(
         const int idxd = idx * d;
 
         // Find closest centroid
-        int min_class = 0;
-        float dist = 0;
-        for (int i = 0; i < d; i++) {
-            dist += pow(d_data[i+idxd] - s_centroids[i], 2);
-        }
-        float min_dist = dist;
-        for (int c = 1; c < k; c++) {
+        int min_class = -1;
+        float dist;
+        float min_dist = FLT_MAX;
+        for (int c = 0; c < k; c++) {
             dist = 0;
             for (int i = 0; i < d; i++) {
                 dist += pow(d_data[i+idxd] - s_centroids[i+c*d], 2);
@@ -152,12 +150,9 @@ static __global__ void calculate_error(
         const int idxd = idx * d;
 
         // Find closest centroid
-        float dist = 0;
-        for (int i = 0; i < d; i++) {
-            dist += pow(d_data[i+idxd] - d_centroids[i], 2);
-        }
-        float min_dist = dist;
-        for (int c = 1; c < k; c++) {
+        float dist;
+        float min_dist = FLT_MAX;
+        for (int c = 0; c < k; c++) {
             dist = 0;
             for (int i = 0; i < d; i++) {
                 dist += pow(d_data[i+idxd] - d_centroids[i+c*d], 2);
@@ -305,7 +300,7 @@ void KMeans_CUDA::one_epoch() {
     CUDA_CHECK( cudaMemset(d_sum,   0, k*d*sizeof(float)) );
     int threads_per_block = 32;
     int blocks1 = (n + threads_per_block - 1) / threads_per_block;
-    size_t shared_mem_size = (2*k*d*sizeof(float)) + (k*sizeof(float));
+    size_t shared_mem_size = 3*k*d*sizeof(float);
 
     // Run kernel to get sums and counts
     sum_and_count<<<blocks1, threads_per_block, shared_mem_size>>>(d_data, d_centroids, d_sum, d_count, n, d, k);
