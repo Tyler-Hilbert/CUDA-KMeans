@@ -44,7 +44,7 @@ __global__ void sum_and_count(
 // n: number of data points
 // d: number of dimensions
 // k: number of clusters
-static __global__ void calculate_error(
+__global__ void calculate_error(
     const float *d_data,
     const float *d_centroids,
     float *d_error,
