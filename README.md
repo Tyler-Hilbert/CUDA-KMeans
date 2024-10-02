@@ -3,7 +3,7 @@
 ```C++
 KMeans_CUDA model (data, N, D, K); // Where data is AoS, N is number of data points, D is number of dimensions and K is number of clusters
 model.one_epoch(); // Trains one epoch
-model.print_predictions(); // Classify data
+model.print_predictions(); // Prints the classifications. Can be commented out.
 // printf ("Error: %f\n", model.compute_error()); // Uncomment to print error
 ```  
 
