@@ -35,7 +35,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 // d: number of dimensions
 // k: number of clusters
 // Uses shared memory of 3*k*d
-static __global__ void sum_and_count(
+__global__ void sum_and_count(
     const float *d_data,
     const float *d_centroids,
     float *d_sum,
@@ -108,7 +108,7 @@ static __global__ void sum_and_count(
 // Updates each centroid using d_sum and d_count where the index is d * centroid number (out of K).
 // d: number of dimensions
 // k: number of clusters
-static __global__ void update_centroids(
+__global__ void update_centroids(
     float *d_centroids,
     const float *d_sum,
     const int *d_count,
@@ -135,7 +135,7 @@ static __global__ void update_centroids(
 // n: number of data points
 // d: number of dimensions
 // k: number of clusters
-static __global__ void calculate_error(
+__global__ void calculate_error(
     const float *d_data,
     const float *d_centroids,
     float *d_error,

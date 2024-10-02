@@ -148,6 +148,7 @@ int main() {
         model.one_epoch();
         model.print_predictions();
         model.print_centroids();
+        // printf ("Error: %f\n", model.compute_error()); // Uncomment to print error
     }
 
     

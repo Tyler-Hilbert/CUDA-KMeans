@@ -4,6 +4,7 @@
 KMeans_CUDA model (data, N, D, K); // Where data is AoS, N is number of data points, D is number of dimensions and K is number of clusters
 model.one_epoch(); // Trains one epoch
 model.print_predictions(); // Classify data
+// printf ("Error: %f\n", model.compute_error()); // Uncomment to print error
 ```  
 
 ## Kernels
@@ -60,3 +61,10 @@ Go to: https://github.com/Tyler-Hilbert/CUDA-KMeans/tree/52db75728794449dc152989
 ## Performance compared to scikit-learn and ArrayFire  
 It is shown that this implementations of K-Means outperforms scitkit-learn and ArrayFire on a T4.  
 ![CUDA KMeans Performance vs scikit-learn and ArrayFire](https://raw.githubusercontent.com/Tyler-Hilbert/CUDA-KMeans/main/Performance/Comparison.png)  
+
+## Usage Continued  
+To compile the test program:  
+$git clone https://github.com/Tyler-Hilbert/CUDA-KMeans.git  
+$cd CUDA-KMeans  
+$nvcc main.cpp KMeans_CUDA.cu -o kmeans  
+$./kmeans  
