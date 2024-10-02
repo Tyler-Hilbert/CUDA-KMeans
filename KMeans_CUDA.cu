@@ -34,7 +34,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 // n: number of data points
 // d: number of dimensions
 // k: number of clusters
-// Uses shared memory of (k+2*k*d)
+// Uses shared memory of 3*k*d
 static __global__ void sum_and_count(
     const float *d_data,
     const float *d_centroids,

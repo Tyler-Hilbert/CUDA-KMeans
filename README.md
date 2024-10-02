@@ -27,7 +27,7 @@ __global__ void update_centroids(
 // n: number of data points
 // d: number of dimensions
 // k: number of clusters
-// Uses shared memory of (k+2*k*d)
+// Uses shared memory of 3*k*d
 __global__ void sum_and_count(
     const float *d_data,
     const float *d_centroids,
@@ -37,6 +37,21 @@ __global__ void sum_and_count(
     int d,
     int k
 );
+```  
+
+```C++
+// Computes error and updates d_error
+// n: number of data points
+// d: number of dimensions
+// k: number of clusters
+static __global__ void calculate_error(
+    const float *d_data,
+    const float *d_centroids,
+    float *d_error,
+    int n,
+    int d,
+    int k
+) {
 ```  
 
 ## Performance  
